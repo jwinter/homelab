@@ -28,7 +28,7 @@ source "proxmox-iso" "fedora-kickstart" {
   ]
   boot_wait    = "10s"
   disks {
-    disk_size         = "5G"
+    disk_size         = "8G"
     storage_pool      = "local-lvm"
     type              = "scsi"
     format            = "raw"
@@ -57,8 +57,12 @@ source "proxmox-iso" "fedora-kickstart" {
   node                 = "proxmox"
   proxmox_url          = "https://10.0.0.200:8006/api2/json"
   ssh_username         = "root"
-  #ssh_password         = "packer"
+  ssh_password         = "packer"
   ssh_timeout          = "15m"
+
+  cloud_init = true
+  cloud_init_storage_pool = "local-lvm"
+  
   template_description = "Fedora 29-1.2, generated on ${timestamp()}"
   template_name        = "fedora-29"
 }
