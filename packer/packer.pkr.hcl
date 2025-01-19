@@ -19,6 +19,11 @@ variable "username" {
 
 build {
   sources = ["source.proxmox-iso.fedora-kickstart"]
+
+  provisioner "shell" {
+    inline = ["yum install -y cloud-init qemu-guest-agent cloud-utils-growpart gdisk", "systemctl enable qemu-guest-agent", "shred -u /etc/ssh/*_key /etc/ssh/*_key.pub", "rm -f /var/run/utmp", ">/var/log/lastlog", ">/var/log/wtmp", ">/var/log/btmp", "rm -rf /tmp/* /var/tmp/*", "unset HISTFILE; rm -rf /home/*/.*history /root/.*history", "rm -f /root/*ks", "passwd -d root", "passwd -l root", "rm -f /etc/ssh/ssh_config.d/allow-root-ssh.conf"
+    ]
+  }
 }
 
 source "proxmox-iso" "fedora-kickstart" {
@@ -57,7 +62,7 @@ source "proxmox-iso" "fedora-kickstart" {
   node                 = "proxmox"
   proxmox_url          = "https://10.0.0.200:8006/api2/json"
   ssh_username         = "root"
-  ssh_password         = "packer"
+  ssh_password         = "securepassword"
   ssh_timeout          = "15m"
 
   cloud_init = true
