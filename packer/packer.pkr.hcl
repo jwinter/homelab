@@ -18,15 +18,39 @@ variable "username" {
 }
 
 build {
-  sources = ["source.proxmox-iso.fedora-kickstart"]
+  sources = ["source.proxmox-iso.rocky-kickstart"]
 
+  # this is copy/pasted; looks like it's trying to clean up ssh before saving the image
   provisioner "shell" {
-    inline = ["yum install -y cloud-init qemu-guest-agent cloud-utils-growpart gdisk", "systemctl enable qemu-guest-agent", "shred -u /etc/ssh/*_key /etc/ssh/*_key.pub", "rm -f /var/run/utmp", ">/var/log/lastlog", ">/var/log/wtmp", ">/var/log/btmp", "rm -rf /tmp/* /var/tmp/*", "unset HISTFILE; rm -rf /home/*/.*history /root/.*history", "rm -f /root/*ks", "passwd -d root", "passwd -l root", "rm -f /etc/ssh/ssh_config.d/allow-root-ssh.conf"
+    inline = ["yum install -y cloud-init qemu-guest-agent cloud-utils-growpart gdisk",
+      "systemctl enable qemu-guest-agent",
+      "shred -u /etc/ssh/*_key /etc/ssh/*_key.pub",
+      "rm -f /var/run/utmp",
+      ">/var/log/lastlog", #truncate these files (`>file` truncates a file)
+      ">/var/log/wtmp",
+      ">/var/log/btmp",
+      "rm -rf /tmp/* /var/tmp/*",
+      "unset HISTFILE; rm -rf /home/*/.*history /root/.*history",
+      "rm -f /root/*ks",
+      # "passwd -d root",
+      # "passwd -l root",
+      "sudo truncate -s 0 /etc/machine-id",
+      #"rm -f /etc/ssh/ssh_config.d/allow-root-ssh.conf"
     ]
   }
+
+  # Provisioning the VM Template for Cloud-Init Integration in Proxmox #2
+    provisioner "file" {
+        source = "config/99-pve.cfg"
+        destination = "/tmp/99-pve.cfg"
+    }
+    # Provisioning the VM Template for Cloud-Init Integration in Proxmox #3
+    provisioner "shell" {
+        inline = [ "sudo cp /tmp/99-pve.cfg /etc/cloud/cloud.cfg.d/99-pve.cfg" ]
+    }  
 }
 
-source "proxmox-iso" "fedora-kickstart" {
+source "proxmox-iso" "rocky-kickstart" {
   boot_command = [
     "<tab> text inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
     #"<tab> text inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
@@ -68,6 +92,6 @@ source "proxmox-iso" "fedora-kickstart" {
   cloud_init = true
   cloud_init_storage_pool = "local-lvm"
   
-  template_description = "Fedora 29-1.2, generated on ${timestamp()}"
-  template_name        = "fedora-29"
+  template_description = "Rocky 9, generated on ${timestamp()}"
+  template_name        = "rocky-9-${formatdate("YYYY-MM-DD-hh-mm-ss", timestamp())}"
 }
